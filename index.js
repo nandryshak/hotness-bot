@@ -15,9 +15,9 @@ const hotnessSettings = {
     icon: '🔥',
 
     words: 5,
-    byUsers: 1,
-    inMinutes: 2,
-    coolAfterMinutes: 1,
+    byUsers: 2,
+    inMinutes: 3,
+    coolAfterMinutes: 15,
 
     excludedChannels: [],
     hotChannels: {},
@@ -108,7 +108,7 @@ function dispatchCommand(message) {
         }
     }
 
-    if (message.author.id !== client.user.id) {
+    if (message.author.id !== client.user.id && hotnessSettings.enabled) {
         return checkHotness(message);
     }
 }
