@@ -20,6 +20,7 @@ const hotnessSettings = {
     coolAfterMinutes: 1,
 
     excludedChannels: [],
+    hotChannels: {},
 };
 
 const coolingTimeouts = {};
@@ -74,21 +75,30 @@ function checkHotness(message) {
     }
 }
 
+function channelIsHot(channel) {
+    return !!hotnessSettings.hotChannels[channel.id];
+}
+
 function setChannelHot(message) {
     const channel = message.channel;
     const icon = hotnessSettings.icon;
-    channel.setName(icon + channel.name + icon);
 
+    // Set name and send a message only if channel is not already hot.
+    if (!channelIsHot(channel)) {
+        channel.setName(icon + channel.name + icon);
+        channel.send(hotnessSettings.icon + `This channel is HOT` + hotnessSettings.icon);
+        hotnessSettings.hotChannels[channel.id] = channel;
+    }
+
+    // Set cooling timeout to remove icons after channel cools off.
     if (coolingTimeouts[channel.id]) {
         clearTimeout(coolingTimeouts[channel.id]);
     }
-
     coolingTimeouts[channel.id] = setTimeout(() => {
         channel.setName(channel.name.replace(icon, '').replace(icon, ''));
-        channel.send(`This channel has cooled off.`);
+        hotnessSettings.hotChannels[channel.id] = undefined;
     }, hotnessSettings.coolAfterMinutes * 60 * 1000);
 
-    channel.send(hotnessSettings.icon + `This channel is HOT` + hotnessSettings.icon);
 }
 
 function dispatchCommand(message) {
