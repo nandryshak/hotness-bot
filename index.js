@@ -27,7 +27,7 @@ const coolingTimeouts = {};
 
 function maybeUpdateHotter(message) {
     // W words, by X users, in Y minutes, remove icon after Z minutes
-    const args = message.content.replace('.hot', '').trim().split(' ').map(parseFloat).filter(arg => arg != NaN);
+    const args = message.content.replace('.hot', '').trim().split(' ').map(parseFloat).filter(arg => !!arg);
 
     if (args.length === 0) {
         return toggleHotter();
