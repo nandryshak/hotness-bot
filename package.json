@@ -1,0 +1,13 @@
+{
+  "name": "hotness-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Nick Andryshak",
+  "license": "GPLv3",
+  "dependencies": {
+    "discord.js": "^11.5.1",
+    "dotenv": "^8.0.0",
+    "erlpack": "hammerandchisel/erlpack",
+    "uws": "^100.0.1"
+  }
+}
