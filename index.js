@@ -232,7 +232,7 @@ function loadSettings() {
     console.log("Settings:", hotnessSettings);
 }
 
+client.login(process.env.DISCORD_TOKEN);
 loadSettings();
 client.on('ready', () => console.log(`Logged in as ${client.user.tag}!`));
 client.on('message', dispatchCommand);
-client.login(process.env.DISCORD_TOKEN);
