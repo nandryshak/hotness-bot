@@ -1,0 +1,18 @@
+[Unit]
+Description=Hotness Discord Bot
+Requires=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+Environment=DISCORD_TOKEN=
+WorkingDirectory=/home/ubuntu/hotness-bot.git
+ExecStartPre=yarn
+ExecStart=node index
+TimeoutSec=30
+RestartSec=15s
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
