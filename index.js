@@ -100,8 +100,14 @@ function hotdisablehere(message) {
 
 function hotsettings(message) {
     const settingsCopy = Object.assign({}, hotnessSettings);
-    settingsCopy.whitelist = Array.from(settingsCopy.whitelist).map(cid => message.guild.channels.find(c => c.id === cid).name)
-    settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink).map(cid => message.guild.channels.find(c => c.id === cid).name)
+    settingsCopy.whitelist = Array.from(settingsCopy.whitelist).map(cid => {
+        const channel = client.channels.find(c => c.id === cid)
+        return channel ? channel.name : '<unknown>';
+    });
+    settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink).map(cid => {
+        const channel = client.channels.find(c => c.id === cid)
+        return channel ? channel.name : '<unknown>';
+    })
     settingsCopy.hotChannels = Array.from(settingsCopy.hotChannels).map(c => c.hotName);
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
     return '```' + settingsJSON + '```';
