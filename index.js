@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const Discord = require('discord.js');
 const client = new Discord.Client();
+const fs = require('fs');
 
 const COMMANDS = {
     // hotlink:
@@ -26,10 +27,6 @@ const hotnessSettings = {
 };
 
 const coolingTimeouts = {};
-
-function saveSettings() {
-
-}
 
 function parseArgs(message) {
     return message.content.trim().split(' ').slice(1);
@@ -131,6 +128,7 @@ function setChannelHot(message) {
         const hotChannel = { id: channel.id, hotName: hotName, oldName: oldName };
         console.log("hotChannel:", hotChannel);
         hotnessSettings.hotChannels.push(hotChannel);
+        saveSettings();
     }
 
     // Set cooling timeout to remove icons after channel cools off.
@@ -139,11 +137,12 @@ function setChannelHot(message) {
     }
     coolingTimeouts[channel.id] = setTimeout(() => {
         const hotChannel = hotnessSettings.hotChannels.find(c => c.id === channel.id);
-        console.log("cooling hotChannel:", hotChannel);
-        const oldName = hotChannel.oldName;
-        if (oldName) {
+        if (hotChannel && hotChannel.oldName) {
+            console.log("cooling hotChannel:", hotChannel);
+            const oldName = hotChannel.oldName;
             channel.setName(oldName);
             hotnessSettings.hotChannels = hotnessSettings.hotChannels.filter(c => c.id !== channel.id);
+            saveSettings();
         }
     }, hotnessSettings.coolAfterMinutes * 60 * 1000);
 
@@ -161,6 +160,27 @@ function dispatchCommand(message) {
     }
 }
 
+function saveSettings() {
+    const settingsCopy = Object.assign({}, hotnessSettings);
+    settingsCopy.whitelist = Array.from(settingsCopy.whitelist);
+    const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
+    fs.writeFile("settings.json", settingsJSON, err => err && console.log("Error saving settings:", err));
+}
+
+function loadSettings() {
+    try {
+        const settingsFileContents = fs.readFileSync('settings.json');
+        const settingsJSON = JSON.parse(settingsFileContents);
+        settingsJSON.whitelist = new Set(settingsJSON.whitelist);
+        Object.assign(hotnessSettings, settingsJSON);
+        hotnessSettings.hotChannels = [];
+    } catch (e) {
+        console.log("Error loading settings file. Using default settings.", e.message);
+    }
+    console.log("Settings:", hotnessSettings);
+}
+
+loadSettings();
 client.on('ready', () => console.log(`Logged in as ${client.user.tag}!`));
 client.on('message', dispatchCommand);
 client.login(process.env.DISCORD_TOKEN);
