@@ -140,17 +140,18 @@ function setChannelHot(message) {
         const hotChannel = { id: channel.id, hotName: hotName, oldName: oldName };
         console.log("hotChannel:", hotChannel);
         hotnessSettings.hotChannels.push(hotChannel);
-        saveSettings();
-    }
 
-    // Maybe put a link in the general channel
-    if (hotnessSettings.channelsToLink.has(channel.id)) {
-        const generalChannel = message.guild.channels.find(c => c.name === 'general');
-        if (generalChannel) {
-            generalChannel.send(`Checkout the 🔥HOT🔥 discussion in #${channel.name}`);
-        } else {
-            console.error('Could not find general channel');
+        // Maybe put a link in the general channel
+        if (hotnessSettings.channelsToLink.has(channel.id)) {
+            const generalChannel = message.guild.channels.find(c => c.name === 'general');
+            if (generalChannel) {
+                generalChannel.send(`Checkout the 🔥HOT🔥 discussion in <#${channel.id}>`);
+            } else {
+                console.error('Could not find general channel');
+            }
         }
+
+        saveSettings();
     }
 
     // Set cooling timeout to remove icons after channel cools off.
