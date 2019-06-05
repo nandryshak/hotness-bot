@@ -31,6 +31,8 @@ const hotnessSettings = {
         '189113793836482560', // soul
         '257314495876038656', // nanny
     ],
+
+    generalChannelId: '263540094864982026',
 };
 
 const coolingTimeouts = {};
@@ -162,7 +164,7 @@ function setChannelHot(message) {
 
         // Maybe put a link in the general channel
         if (hotnessSettings.channelsToLink.has(channel.id)) {
-            const generalChannel = message.guild.channels.find(c => c.name === 'general');
+            const generalChannel = message.guild.channels.find(c => c.id === hotnessSettings.generalChannelId);
             if (generalChannel) {
                 generalChannel.send(`Checkout the 🔥HOT🔥 discussion in <#${channel.id}>`);
             } else {
@@ -192,7 +194,7 @@ function setChannelHot(message) {
 
 function dispatchCommand(message) {
     if (hotnessSettings.enabledUsers.find(id => id === message.author.id)) {
-        for (const cmd in COMMANDS) {
+        for (const cmd of COMMANDS) {
             if (message.content.match(`^\\.${cmd}\\b`)) {
                 return message.reply(COMMANDS[cmd](message));
             }
@@ -219,11 +221,8 @@ function loadSettings() {
         settingsJSON.whitelist = new Set(settingsJSON.whitelist);
         settingsJSON.channelsToLink = new Set(settingsJSON.channelsToLink);
         Object.assign(hotnessSettings, settingsJSON);
-        for (const hotChannel in hotnessSettings.hotChannels) {
-            const channel = client.channels.array().find(c => c.id === hotChannel.id);
-            if (channel) {
-                channel.setName(hotChannel.oldName);
-            }
+        for (const hotChannel of hotnessSettings.hotChannels) {
+            client.channels.array().find(c => c.id === hotChannel.id).setName(hotChannel.oldName);;
         }
         hotnessSettings.hotChannels = [];
     } catch (e) {
@@ -233,6 +232,8 @@ function loadSettings() {
 }
 
 client.login(process.env.DISCORD_TOKEN);
-loadSettings();
-client.on('ready', () => console.log(`Logged in as ${client.user.tag}!`));
+client.on('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`)
+    loadSettings();
+});
 client.on('message', dispatchCommand);
