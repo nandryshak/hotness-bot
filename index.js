@@ -198,6 +198,12 @@ function loadSettings() {
         settingsJSON.whitelist = new Set(settingsJSON.whitelist);
         settingsJSON.channelsToLink = new Set(settingsJSON.channelsToLink);
         Object.assign(hotnessSettings, settingsJSON);
+        for (const hotChannel in hotnessSettings.hotChannels) {
+            const channel = client.channels.array().find(c => c.id === hotChannel.id);
+            if (channel) {
+                channel.setName(hotChannel.oldName);
+            }
+        }
         hotnessSettings.hotChannels = [];
     } catch (e) {
         console.log("Error loading settings file. Using default settings.", e.message);
