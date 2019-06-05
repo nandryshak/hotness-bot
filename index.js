@@ -155,7 +155,7 @@ function setChannelHot(message) {
         const oldName = channel.name;
         const hotName = icon + oldName + icon;
         channel.setName(hotName);
-        channel.send(hotnessSettings.icon + `This channel is HOT` + hotnessSettings.icon);
+        // channel.send(hotnessSettings.icon + `This channel is HOT` + hotnessSettings.icon);
         const hotChannel = { id: channel.id, hotName: hotName, oldName: oldName };
         console.log("hotChannel:", hotChannel);
         hotnessSettings.hotChannels.push(hotChannel);
