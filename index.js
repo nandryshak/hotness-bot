@@ -24,12 +24,26 @@ const hotnessSettings = {
 
     whitelist: new Set(),
     hotChannels: [],
+    channelsToLink: new Set(),
 };
 
 const coolingTimeouts = {};
 
 function parseArgs(message) {
     return message.content.trim().split(' ').slice(1);
+}
+
+function hotlink(message) {
+    const args = parseArgs(message);
+    if (hotnessSettings.channelsToLink.has(message.channel.id)) {
+        hotnessSettings.channelsToLink.delete(message.channel.id);
+        saveSettings();
+        return `Channel will no longer be linked in #general`;
+    } else {
+        hotnessSettings.channelsToLink.add(message.channel.id);
+        saveSettings();
+        return `Channel will be linked in #general when it's hot`;
+    }
 }
 
 function maybeUpdateHotter(message) {
@@ -81,6 +95,7 @@ function hotdisablehere(message) {
 function hotsettings(message) {
     const settingsCopy = Object.assign({}, hotnessSettings);
     settingsCopy.whitelist = Array.from(settingsCopy.whitelist).map(cid => message.guild.channels.find(c => c.id === cid).name)
+    settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink).map(cid => message.guild.channels.find(c => c.id === cid).name)
     settingsCopy.hotChannels = Array.from(settingsCopy.hotChannels).map(c => c.hotName);
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
     return '```' + settingsJSON + '```';
@@ -128,6 +143,16 @@ function setChannelHot(message) {
         saveSettings();
     }
 
+    // Maybe put a link in the general channel
+    if (hotnessSettings.channelsToLink.has(channel.id)) {
+        const generalChannel = message.guild.channels.find(c => c.name === 'general');
+        if (generalChannel) {
+            generalChannel.send(`Checkout the 🔥HOT🔥 discussion in #${channel.name}`);
+        } else {
+            console.error('Could not find general channel');
+        }
+    }
+
     // Set cooling timeout to remove icons after channel cools off.
     if (coolingTimeouts[channel.id]) {
         clearTimeout(coolingTimeouts[channel.id]);
@@ -160,6 +185,7 @@ function dispatchCommand(message) {
 function saveSettings() {
     const settingsCopy = Object.assign({}, hotnessSettings);
     settingsCopy.whitelist = Array.from(settingsCopy.whitelist);
+    settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink);
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
     fs.writeFile("settings.json", settingsJSON, err => err && console.log("Error saving settings:", err));
 }
