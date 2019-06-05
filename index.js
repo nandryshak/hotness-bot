@@ -195,6 +195,7 @@ function loadSettings() {
         const settingsFileContents = fs.readFileSync('settings.json');
         const settingsJSON = JSON.parse(settingsFileContents);
         settingsJSON.whitelist = new Set(settingsJSON.whitelist);
+        settingsJSON.channelsToLink = new Set(settingsJSON.channelsToLink);
         Object.assign(hotnessSettings, settingsJSON);
         hotnessSettings.hotChannels = [];
     } catch (e) {
