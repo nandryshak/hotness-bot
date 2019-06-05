@@ -10,6 +10,7 @@ const COMMANDS = {
     hotenablehere: hotenablehere,
     hotdisablehere: hotdisablehere,
     hotsettings: hotsettings,
+    hothelp: help,
     hot: maybeUpdateHotter,
 };
 
@@ -102,7 +103,14 @@ function hotsettings(message) {
 }
 
 function help() {
-    return 'help';
+    return `Commands: \`\`\`
+hotlink: toggle linking this channel in general when it becomes hot
+hotenablehere: enable the hotness icons for this channel
+hotdisablehere: disable the hotness icons for this channel
+hotsettings: print settings
+hot: toggle the hotness-bot
+hot W X Y Z: change settings to: W words, by X users, in Y minutes, remove icon after Z minutes
+\`\`\``;
 }
 
 function timestampFromSnowflake(id) {
