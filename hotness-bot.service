@@ -8,8 +8,8 @@ User=ubuntu
 Group=ubuntu
 Environment=DISCORD_TOKEN=
 WorkingDirectory=/home/ubuntu/hotness-bot.git
-ExecStartPre=yarn
-ExecStart=node index
+ExecStartPre=/usr/bin/yarn
+ExecStart=/usr/bin/node index
 TimeoutSec=30
 RestartSec=15s
 Restart=always

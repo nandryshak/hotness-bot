@@ -5,10 +5,10 @@ const client = new Discord.Client();
 const fs = require('fs');
 
 const COMMANDS = {
-    // hotlink:
     // hoticon:
-    // nohot: ,
+    hotlink: hotlink,
     hotenablehere: hotenablehere,
+    hotdisablehere: hotdisablehere,
     hotsettings: hotsettings,
     hot: maybeUpdateHotter,
 };
@@ -30,10 +30,6 @@ const coolingTimeouts = {};
 
 function parseArgs(message) {
     return message.content.trim().split(' ').slice(1);
-}
-
-function noArgs(args) {
-    return args.length === 0;
 }
 
 function maybeUpdateHotter(message) {
@@ -71,14 +67,15 @@ function updateHotter(args) {
 }
 
 function hotenablehere(message) {
-    const args = parseArgs(message);
-    if (noArgs(args)) {
-        hotnessSettings.whitelist.add(message.channel.id);
-        saveSettings();
-        return `hotness is now enabled for this channel!`;
-    } else {
-        return help();
-    }
+    hotnessSettings.whitelist.add(message.channel.id);
+    saveSettings();
+    return `hotness is now enabled for this channel!`;
+}
+
+function hotdisablehere(message) {
+    hotnessSettings.whitelist.delete(message.channel.id);
+    saveSettings();
+    return `hotness is now disabled for this channel`;
 }
 
 function hotsettings(message) {
