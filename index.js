@@ -194,7 +194,7 @@ function setChannelHot(message) {
 
 function dispatchCommand(message) {
     if (hotnessSettings.enabledUsers.find(id => id === message.author.id)) {
-        for (const cmd of COMMANDS) {
+        for (const cmd in COMMANDS) {
             if (message.content.match(`^\\.${cmd}\\b`)) {
                 return message.reply(COMMANDS[cmd](message));
             }
