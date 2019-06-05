@@ -26,6 +26,11 @@ const hotnessSettings = {
     whitelist: new Set(),
     hotChannels: [],
     channelsToLink: new Set(),
+
+    enabledUsers: [
+        '189113793836482560', // soul
+        '257314495876038656', // nanny
+    ],
 };
 
 const coolingTimeouts = {};
@@ -180,9 +185,11 @@ function setChannelHot(message) {
 }
 
 function dispatchCommand(message) {
-    for (const cmd in COMMANDS) {
-        if (message.content.match(`^\\.${cmd}\\b`)) {
-            return message.reply(COMMANDS[cmd](message));
+    if (hotnessSettings.enabledUsers.find(id => id === message.author.id)) {
+        for (const cmd in COMMANDS) {
+            if (message.content.match(`^\\.${cmd}\\b`)) {
+                return message.reply(COMMANDS[cmd](message));
+            }
         }
     }
 
