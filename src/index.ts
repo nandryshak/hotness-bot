@@ -1,10 +1,10 @@
 require('dotenv').config();
 
-const Discord = require('discord.js');
+import * as Discord from 'discord.js';
 const client = new Discord.Client();
-const fs = require('fs');
+import * as fs from 'fs';
 
-const COMMANDS = {
+const COMMANDS: Record<string, (message: Discord.Message) => string> = {
     // hoticon:
     hotlink: hotlink,
     hotenablehere: hotenablehere,
@@ -14,6 +14,13 @@ const COMMANDS = {
     hot: maybeUpdateHotter,
 };
 
+
+type ChannelId = string;
+interface HotChannel {
+    id: ChannelId,
+    hotName: string,
+    oldName: string,
+};
 const hotnessSettings = {
     enabled: false,
     icon: '🔥',
@@ -23,9 +30,9 @@ const hotnessSettings = {
     inMinutes: 3,
     coolAfterMinutes: 15,
 
-    whitelist: new Set(),
-    hotChannels: [],
-    channelsToLink: new Set(),
+    whitelist: new Set<ChannelId>(),
+    hotChannels: new Array<HotChannel>(),
+    channelsToLink: new Set<ChannelId>(),
 
     enabledUsers: [
         '189113793836482560', // soul
@@ -35,14 +42,14 @@ const hotnessSettings = {
     generalChannelId: '263540094864982026',
 };
 
-const coolingTimeouts = {};
+const coolingTimeouts: Record<ChannelId, NodeJS.Timeout> = {};
 
-function parseArgs(message) {
+type Args = string[];
+function parseArgs(message: Discord.Message): Args {
     return message.content.trim().split(' ').slice(1);
 }
 
-function hotlink(message) {
-    const args = parseArgs(message);
+function hotlink(message: Discord.Message) {
     if (hotnessSettings.channelsToLink.has(message.channel.id)) {
         hotnessSettings.channelsToLink.delete(message.channel.id);
         saveSettings();
@@ -54,7 +61,7 @@ function hotlink(message) {
     }
 }
 
-function maybeUpdateHotter(message) {
+function maybeUpdateHotter(message: Discord.Message) {
     // W words, by X users, in Y minutes, remove icon after Z minutes
     const args = parseArgs(message).map(parseFloat).filter(arg => !!arg);
 
@@ -77,7 +84,7 @@ function toggleHotter() {
     return str;
 }
 
-function updateHotter(args) {
+function updateHotter(args: number[]) {
     const hs = hotnessSettings;
     hs.enabled = true;
     hs.words = args[0];
@@ -88,29 +95,29 @@ function updateHotter(args) {
     return `hotness is now enabled! settings are: ${hs.words} words, by ${hs.byUsers} users, in ${hs.inMinutes} minutes. Remove icon after ${hs.coolAfterMinutes} minutes.`;
 }
 
-function hotenablehere(message) {
+function hotenablehere(message: Discord.Message) {
     hotnessSettings.whitelist.add(message.channel.id);
     saveSettings();
     return `hotness is now enabled for this channel!`;
 }
 
-function hotdisablehere(message) {
+function hotdisablehere(message: Discord.Message) {
     hotnessSettings.whitelist.delete(message.channel.id);
     saveSettings();
     return `hotness is now disabled for this channel`;
 }
 
-function hotsettings(message) {
-    const settingsCopy = Object.assign({}, hotnessSettings);
+function hotsettings() {
+    const settingsCopy = <any>Object.assign({}, hotnessSettings);
     settingsCopy.whitelist = Array.from(settingsCopy.whitelist).map(cid => {
-        const channel = client.channels.find(c => c.id === cid)
+        const channel = <Discord.TextChannel>client.channels.find(c => c.id === cid)
         return channel ? channel.name : '<unknown>';
     });
     settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink).map(cid => {
-        const channel = client.channels.find(c => c.id === cid)
+        const channel = <Discord.TextChannel>client.channels.find(c => c.id === cid)
         return channel ? channel.name : '<unknown>';
     })
-    settingsCopy.hotChannels = Array.from(settingsCopy.hotChannels).map(c => c.hotName);
+    settingsCopy.hotChannels = settingsCopy.hotChannels.map((c: HotChannel) => c.hotName);
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
     return '```' + settingsJSON + '```';
 }
@@ -126,12 +133,12 @@ hot W X Y Z: change settings to: W words, by X users, in Y minutes, remove icon 
 \`\`\``;
 }
 
-function timestampFromSnowflake(id) {
-    return new Date((id / 4194304) + 1420070400000);
+function timestampFromSnowflake(id: Discord.Snowflake) {
+    return new Date((parseFloat(id) / 4194304) + 1420070400000);
 }
 
-function checkHotness(message) {
-    const cutoffTime = new Date(new Date() - hotnessSettings.inMinutes * 60000);
+function checkHotness(message: Discord.Message) {
+    const cutoffTime = new Date(<any>new Date() - hotnessSettings.inMinutes * 60000);
     const latestMessages = message.channel.messages.filter(msg => {
         const date = timestampFromSnowflake(msg.id);
         return date >= cutoffTime;
@@ -144,12 +151,12 @@ function checkHotness(message) {
     }
 }
 
-function channelIsHot(channel) {
+function channelIsHot(channel: Discord.GuildChannel) {
     return !!hotnessSettings.hotChannels.find(c => c.id == channel.id);
 }
 
-function setChannelHot(message) {
-    const channel = message.channel;
+function setChannelHot(message: Discord.Message) {
+    const channel = <Discord.TextChannel>message.channel;
     const icon = hotnessSettings.icon;
 
     // Set name and send a message only if channel is not already hot.
@@ -164,7 +171,7 @@ function setChannelHot(message) {
 
         // Maybe put a link in the general channel
         if (hotnessSettings.channelsToLink.has(channel.id)) {
-            const generalChannel = message.guild.channels.find(c => c.id === hotnessSettings.generalChannelId);
+            const generalChannel = <Discord.TextChannel>message.guild.channels.find(c => c.id === hotnessSettings.generalChannelId);
             if (generalChannel) {
                 generalChannel.send(`Checkout the 🔥HOT🔥 discussion in <#${channel.id}>`);
             } else {
@@ -192,7 +199,7 @@ function setChannelHot(message) {
 
 }
 
-function dispatchCommand(message) {
+function dispatchCommand(message: Discord.Message) {
     if (hotnessSettings.enabledUsers.find(id => id === message.author.id)) {
         for (const cmd in COMMANDS) {
             if (message.content.match(`^\\.${cmd}\\b`)) {
@@ -207,7 +214,7 @@ function dispatchCommand(message) {
 }
 
 function saveSettings() {
-    const settingsCopy = Object.assign({}, hotnessSettings);
+    const settingsCopy = <any>Object.assign({}, hotnessSettings);
     settingsCopy.whitelist = Array.from(settingsCopy.whitelist);
     settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink);
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
@@ -217,12 +224,12 @@ function saveSettings() {
 function loadSettings() {
     try {
         const settingsFileContents = fs.readFileSync('settings.json');
-        const settingsJSON = JSON.parse(settingsFileContents);
+        const settingsJSON = JSON.parse(settingsFileContents.toString());
         settingsJSON.whitelist = new Set(settingsJSON.whitelist);
         settingsJSON.channelsToLink = new Set(settingsJSON.channelsToLink);
         Object.assign(hotnessSettings, settingsJSON);
         for (const hotChannel of hotnessSettings.hotChannels) {
-            client.channels.array().find(c => c.id === hotChannel.id).setName(hotChannel.oldName);;
+            (<Discord.TextChannel>client.channels.array().find(c => c.id === hotChannel.id)).setName(hotChannel.oldName);;
         }
         hotnessSettings.hotChannels = [];
     } catch (e) {
