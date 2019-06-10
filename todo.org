@@ -1,2 +1,6 @@
 - [ ] Only allow specified roles to adjust bot
+- [ ] Real double fire emoji
+- [ ] Convert commands to use commando?
+  https://discord.js.org/#/docs/commando/master/general/welcome
+  https://github.com/discordjs/Commando-guide/blob/master/getting-started.md
 - [ ] .hoticon: allow the icon to be updated
