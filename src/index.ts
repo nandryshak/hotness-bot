@@ -34,10 +34,7 @@ const hotnessSettings = {
     hotChannels: new Array<HotChannel>(),
     channelsToLink: new Set<ChannelId>(),
 
-    enabledUsers: [
-        '189113793836482560', // soul
-        '257314495876038656', // nanny
-    ],
+    enabledRoles: ['269637424798236673'], // 'Moderator' role id
 
     generalChannelId: '263540094864982026',
 };
@@ -199,8 +196,12 @@ function setChannelHot(message: Discord.Message) {
 
 }
 
+function isNanny(id: string) {
+    return id === '257314495876038656';
+}
+
 function dispatchCommand(message: Discord.Message) {
-    if (hotnessSettings.enabledUsers.find(id => id === message.author.id)) {
+    if (hotnessSettings.enabledRoles.some(roleId => message.member.roles.has(roleId)) || isNanny(message.member.id)) {
         for (const cmd in COMMANDS) {
             if (message.content.match(`^\\.${cmd}\\b`)) {
                 return message.reply(COMMANDS[cmd](message));
