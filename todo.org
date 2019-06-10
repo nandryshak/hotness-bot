@@ -1,0 +1,2 @@
+- [ ] Only allow specified roles to adjust bot
+- [ ] .hoticon: allow the icon to be updated
