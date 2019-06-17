@@ -201,6 +201,8 @@ function isNanny(id: string) {
 }
 
 function dispatchCommand(message: Discord.Message) {
+    if (!message.member) return;
+
     if (hotnessSettings.enabledRoles.some(roleId => message.member.roles.has(roleId)) || isNanny(message.member.id)) {
         for (const cmd in COMMANDS) {
             if (message.content.match(`^\\.${cmd}\\b`)) {
