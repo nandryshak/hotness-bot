@@ -158,7 +158,7 @@ function setChannelHot(message: Discord.Message) {
 
     // Set name and send a message only if channel is not already hot.
     if (!channelIsHot(channel)) {
-        const oldName = channel.name;
+        const oldName = channel.name.replace(new RegExp(hotnessSettings.icon, 'g'), '');
         const hotName = icon + oldName + icon;
         channel.setName(hotName);
         // channel.send(hotnessSettings.icon + `This channel is HOT` + hotnessSettings.icon);
