@@ -4,7 +4,6 @@ require('dotenv').config();
 import * as Discord from 'discord.js';
 const client = new Discord.Client();
 import * as fs from 'fs';
-import { Signer } from 'crypto';
 
 const MOD_COMMANDS: Record<string, (message: Discord.Message) => string> = {
     // hoticon:
