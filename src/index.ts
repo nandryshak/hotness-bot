@@ -37,9 +37,11 @@ interface HotnessSettings {
     whitelist: Set<ChannelId>;
     hotChannels: Array<HotChannel>;
     channelsToLink: Set<ChannelId>;
-    enabledRoles: Array<UserId>;
+    enabledRole: string;
     generalChannelId: ChannelId;
     hotSignups: Record<ChannelId, Set<UserId>>;
+    hotSignupRoleId: string | undefined;
+    hotSignupPings: Record<ChannelId, Discord.Message>;
 }
 
 const hotnessSettings: HotnessSettings = {
@@ -52,9 +54,11 @@ const hotnessSettings: HotnessSettings = {
     whitelist: new Set<ChannelId>(),
     hotChannels: new Array<HotChannel>(),
     channelsToLink: new Set<ChannelId>(),
-    enabledRoles: ['269637424798236673'], // 'Moderator' role id
+    enabledRole: process.env.ENABLED_ROLE_ID || '269637424798236673', // 'Moderator' role id
     generalChannelId: '263540094864982026',
     hotSignups: {},
+    hotSignupRoleId: process.env.HOT_SIGNUP_ROLE_ID,
+    hotSignupPings: {},
 };
 
 const coolingTimeouts: Record<ChannelId, NodeJS.Timeout> = {};
@@ -67,7 +71,7 @@ function selfDestructIn(message: Discord.Message, timeoutms: number) {
 
 function hotsignup(message: Discord.Message) {
     if (!hotnessSettings.hotSignups[message.channel.id]) {
-        hotnessSettings.hotSignups[message.channel.id] = new Set<UserId>();
+        hotnessSettings.hotSignups[message.channel.id] = new Set();
     }
     hotnessSettings.hotSignups[message.channel.id].add(message.member.id);
     saveSettings();
@@ -163,16 +167,23 @@ function hotsettings() {
     })
     settingsCopy.hotChannels = settingsCopy.hotChannels.map((c: HotChannel) => c.hotName);
 
-    for (let channelId in settingsCopy.hotSignups) {
-        const channel = <Discord.TextChannel>client.channels.find(c => c.id === channelId);
+    settingsCopy.hotSignups = {};
+    for (let channelId in hotnessSettings.hotSignups) {
+        const channel = client.channels.find(c => c.id === channelId);
+        const signups = (hotnessSettings.hotSignups[channelId] || new Set()).size;
         if (channel) {
-            settingsCopy.hotSignups[channel.name] = settingsCopy.hotSignups[channelId].array().length;
+            settingsCopy.hotSignups[(<Discord.TextChannel>channel).name] = signups;
         }
-        settingsCopy.hotSignups[channelId] = undefined;
     }
 
-    const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
-    return '```' + settingsJSON + '```';
+    settingsCopy.hotSignupPings = undefined;
+    try {
+        const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
+        return '```' + settingsJSON + '```';
+    } catch (e) {
+        console.error('Error in .hotsettings', e.message)
+        return 'error building settingsJSON';
+    }
 }
 
 function help() {
@@ -232,6 +243,8 @@ function setChannelHot(message: Discord.Message) {
             }
         }
 
+        pingHotSignups(channel);
+
         saveSettings();
     }
 
@@ -239,17 +252,55 @@ function setChannelHot(message: Discord.Message) {
     if (coolingTimeouts[channel.id]) {
         clearTimeout(coolingTimeouts[channel.id]);
     }
-    coolingTimeouts[channel.id] = setTimeout(() => {
-        const hotChannel = hotnessSettings.hotChannels.find(c => c.id === channel.id);
-        if (hotChannel && hotChannel.oldName) {
-            console.log("cooling hotChannel:", hotChannel);
-            const oldName = hotChannel.oldName;
-            channel.setName(oldName);
-            hotnessSettings.hotChannels = hotnessSettings.hotChannels.filter(c => c.id !== channel.id);
-            saveSettings();
-        }
-    }, hotnessSettings.coolAfterMinutes * 60 * 1000);
+    coolingTimeouts[channel.id] = setTimeout(() => coolChannel(channel), hotnessSettings.coolAfterMinutes * 60 * 1000);
 
+}
+
+function coolChannel(channel: Discord.TextChannel) {
+    const hotChannel = hotnessSettings.hotChannels.find(c => c.id === channel.id);
+    if (hotChannel && hotChannel.oldName) {
+        console.log("cooling hotChannel:", hotChannel);
+        const oldName = hotChannel.oldName;
+        channel.setName(oldName);
+        hotnessSettings.hotChannels = hotnessSettings.hotChannels.filter(c => c.id !== channel.id);
+        deleteHotSignupPing(channel.id);
+        saveSettings();
+    }
+}
+
+function deleteHotSignupPing(channelId: ChannelId) {
+    const message = hotnessSettings.hotSignupPings[channelId];
+    if (message) message.delete().catch();
+}
+
+function pingHotSignups(channel: Discord.TextChannel) {
+    if (!hotnessSettings.hotSignupRoleId) {
+        console.error('No hotSignupRoleId!', hotnessSettings.hotSignupRoleId);
+        return;
+    }
+
+    const role = channel.guild.roles.get(hotnessSettings.hotSignupRoleId) as Discord.Role;
+    const userIds = (hotnessSettings.hotSignups[channel.id] || new Set());
+    if (userIds.size === 0) return;
+
+    userIds.forEach(userId => {
+        const user = channel.members.array().find(member => member.id === userId);
+        if (user) {
+            user.addRole(role);
+        }
+    });
+
+    channel.send(`<@&${role.id}> ${channel.name} is HOT!`)
+        .then(message => {
+            hotnessSettings.hotSignupPings[channel.id] = message as Discord.Message;
+            const TIMEOUT = 5000;
+            setTimeout(() => {
+                userIds.forEach(userId => {
+                    const user = channel.members.get(userId) as Discord.GuildMember;
+                    user.removeRole(role);
+                });
+            }, TIMEOUT);
+        });
 }
 
 function isNanny(id: string) {
@@ -259,7 +310,7 @@ function isNanny(id: string) {
 function dispatchCommand(message: Discord.Message) {
     if (!message.member) return;
 
-    if (hotnessSettings.enabledRoles.some(roleId => message.member.roles.has(roleId)) || isNanny(message.member.id)) {
+    if (message.member.roles.has(hotnessSettings.enabledRole) || isNanny(message.member.id)) {
         for (const cmd in MOD_COMMANDS) {
             if (message.content.match(`^\\.${cmd}\\b`)) {
                 return message.reply(MOD_COMMANDS[cmd](message));
@@ -282,9 +333,11 @@ function saveSettings() {
     const settingsCopy = <any>Object.assign({}, hotnessSettings);
     settingsCopy.whitelist = Array.from(settingsCopy.whitelist);
     settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink);
-    for (let channelId in settingsCopy.hotSignups) {
-        settingsCopy.hotSignups[channelId] = Array.from(settingsCopy.hotSignups[channelId]);
+    settingsCopy.hotSignups = {};
+    for (let channelId in hotnessSettings.hotSignups) {
+        settingsCopy.hotSignups[channelId] = Array.from(hotnessSettings.hotSignups[channelId] || new Set());
     }
+    settingsCopy.hotSignupPings = undefined;
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
     fs.writeFile("settings.json", settingsJSON, err => err && console.error("Error saving settings:", err));
 }
@@ -296,7 +349,7 @@ function loadSettings() {
         settingsJSON.whitelist = new Set(settingsJSON.whitelist);
         settingsJSON.channelsToLink = new Set(settingsJSON.channelsToLink);
         for (let channelId in settingsJSON.hotSignups) {
-            settingsJSON.hotSignups[channelId] = new Set(settingsJSON[channelId]);
+            settingsJSON.hotSignups[channelId] = new Set(settingsJSON.hotSignups[channelId]);
         }
         Object.assign(hotnessSettings, settingsJSON);
         for (const hotChannel of hotnessSettings.hotChannels) {
