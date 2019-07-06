@@ -283,24 +283,30 @@ function pingHotSignups(channel: Discord.TextChannel) {
     const userIds = (hotnessSettings.hotSignups[channel.id] || new Set());
     if (userIds.size === 0) return;
 
-    userIds.forEach(userId => {
+    let count = 0;
+    Promise.all(<any>Array.from(userIds).map(userId => {
         const user = channel.members.array().find(member => member.id === userId);
         if (user) {
-            user.addRole(role);
+            count += 1;
+            return user.addRole(role);
+        } else {
+            return Promise.resolve();
         }
-    });
+    })).then(() => {
+        console.log(`pinging ${count} out of ${userIds.size} users in ${channel.name}`)
 
-    channel.send(`<@&${role.id}> ${channel.name} is HOT!`)
-        .then(message => {
-            hotnessSettings.hotSignupPings[channel.id] = message as Discord.Message;
-            const TIMEOUT = 5000;
-            setTimeout(() => {
-                userIds.forEach(userId => {
-                    const user = channel.members.get(userId) as Discord.GuildMember;
-                    user.removeRole(role);
-                });
-            }, TIMEOUT);
-        });
+        channel.send(`<@&${role.id}> ${channel.name} is HOT!`)
+            .then(message => {
+                hotnessSettings.hotSignupPings[channel.id] = message as Discord.Message;
+                const TIMEOUT = 5000;
+                setTimeout(() => {
+                    userIds.forEach(userId => {
+                        const user = channel.members.get(userId) as Discord.GuildMember;
+                        user.removeRole(role);
+                    });
+                }, TIMEOUT);
+            });
+    });
 }
 
 function isNanny(id: string) {
