@@ -187,13 +187,18 @@ function hotsettings() {
 }
 
 function help() {
-    return `Commands: \`\`\`
-hotlink: toggle linking this channel in general when it becomes hot
-hotenablehere: enable the hotness icons for this channel
-hotdisablehere: disable the hotness icons for this channel
-hotsettings: print settings
-hot: toggle the hotness-bot
-hot W X Y Z: change settings to: W words, by X users, in Y minutes, remove icon after Z minutes
+    return `
+User Commands: \`\`\`
+.hotsignup: add yourself to the HOTLIST for this channel. When the channel becomes hot, you'll be notified by a special ping.
+.hotsigndown: remove yourself from the hotlist.
+\`\`\`
+Mod Commands: \`\`\`
+.hotlink: toggle linking this channel in general when it becomes hot
+.hotenablehere: enable the hotness icons for this channel
+.hotdisablehere: disable the hotness icons for this channel
+.hotsettings: print settings
+.hot: toggle the hotness-bot
+.hot W X Y Z: change settings to: W words, by X users, in Y minutes, remove icon after Z minutes
 \`\`\``;
 }
 
