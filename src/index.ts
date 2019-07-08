@@ -64,11 +64,9 @@ const hotnessSettings: HotnessSettings = {
 const coolingTimeouts: Record<ChannelId, NodeJS.Timeout> = {};
 
 function selfDestructIn(message: Discord.Message, timeoutms: number) {
-    if (message.author.id === client.user.id) {
-        setTimeout(() => {
-            message.delete().catch(console.error);
-        }, timeoutms)
-    }
+    setTimeout(() => {
+        message.delete().catch(console.error);
+    }, timeoutms);
 }
 
 function hotsignup(message: Discord.Message) {
@@ -301,7 +299,6 @@ function pingHotSignups(channel: Discord.TextChannel) {
         }
     })).then(() => {
         console.log(`pinging ${count} out of ${userIds.size} users in ${channel.name}`)
-
         channel.send(`<@&${role.id}> ${channel.name} is HOT!`)
             .then(message => {
                 hotnessSettings.hotSignupPings[channel.id] = message as Discord.Message;
@@ -351,6 +348,7 @@ function saveSettings() {
         settingsCopy.hotSignups[channelId] = Array.from(hotnessSettings.hotSignups[channelId] || new Set());
     }
     settingsCopy.hotSignupPings = undefined;
+    settingsCopy.hotSignupRoleId = undefined;
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
     fs.writeFile("settings.json", settingsJSON, err => err && console.error("Error saving settings:", err));
 }
