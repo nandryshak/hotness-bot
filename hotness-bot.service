@@ -7,6 +7,8 @@ Type=simple
 User=ubuntu
 Group=ubuntu
 Environment=DISCORD_TOKEN=
+Environment=ENABLED_ROLE_ID=597106149489246238
+Environment=HOT_SIGNUP_ROLE_ID=597796561010950163
 WorkingDirectory=/home/ubuntu/hotness-bot.git
 ExecStartPre=/usr/bin/yarn
 ExecStartPre=/usr/local/bin/gulp compile
