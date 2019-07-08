@@ -64,9 +64,11 @@ const hotnessSettings: HotnessSettings = {
 const coolingTimeouts: Record<ChannelId, NodeJS.Timeout> = {};
 
 function selfDestructIn(message: Discord.Message, timeoutms: number) {
-    setTimeout(() => {
-        message.delete().catch(console.error);
-    }, timeoutms)
+    if (message.author.id === client.user.id) {
+        setTimeout(() => {
+            message.delete().catch(console.error);
+        }, timeoutms)
+    }
 }
 
 function hotsignup(message: Discord.Message) {
