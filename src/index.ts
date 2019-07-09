@@ -344,15 +344,23 @@ function dispatchCommand(message: Discord.Message) {
 }
 
 function saveSettings() {
-    const settingsCopy = <any>Object.assign({}, hotnessSettings);
-    settingsCopy.whitelist = Array.from(settingsCopy.whitelist);
-    settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink);
+    const settingsCopy = <any>{};
+
+    settingsCopy.enabled = hotnessSettings.enabled;
+    settingsCopy.icon = hotnessSettings.icon;
+
+    settingsCopy.words = hotnessSettings.words;
+    settingsCopy.byUsers = hotnessSettings.byUsers;
+    settingsCopy.inMinutes = hotnessSettings.inMinutes;
+    settingsCopy.coolAfterMinutes = hotnessSettings.coolAfterMinutes;
+
+    settingsCopy.whitelist = Array.from(hotnessSettings.whitelist);
+    settingsCopy.channelsToLink = Array.from(hotnessSettings.channelsToLink);
+
     settingsCopy.hotSignups = {};
     for (let channelId in hotnessSettings.hotSignups) {
         settingsCopy.hotSignups[channelId] = Array.from(hotnessSettings.hotSignups[channelId] || new Set());
     }
-    settingsCopy.hotSignupPings = undefined;
-    settingsCopy.hotSignupRoleId = undefined;
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
     fs.writeFile("settings.json", settingsJSON, err => err && console.error("Error saving settings:", err));
 }
