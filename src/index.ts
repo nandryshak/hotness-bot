@@ -74,6 +74,9 @@ const hotnessSettings: HotnessSettings = {
 const coolingTimeouts: Record<ChannelId, NodeJS.Timeout> = {};
 
 function findChannel(maybeChannelName: string) {
+    if (!maybeChannelName) {
+        return undefined;
+    }
     const channels: Discord.GuildChannel[] = client.guilds.array().map(g => g.channels.array()).reduce((acc, val) => acc.concat(val), []);
     let channel = channels.find(c => c.name.toLowerCase() === maybeChannelName);
     if (!channel) {
@@ -90,7 +93,7 @@ function hotpinginclude(message: Discord.Message) {
     }
     hotnessSettings.hotPingExcludes.delete(channel.id);
     saveSettings();
-    return `Channel ${channel.name} is now eligible for hotness pings`;
+    return `<#${channel.id}> is now eligible for hotness pings`;
 }
 
 function hotpingexclude(message: Discord.Message) {
@@ -101,7 +104,7 @@ function hotpingexclude(message: Discord.Message) {
     }
     hotnessSettings.hotPingExcludes.add(channel.id);
     saveSettings();
-    return `Channel ${channel.name} is now excluded from hotness pings`;
+    return `<#${channel.id}> is now excluded from hotness pings`;
 }
 
 function hotlistpingsignups(message: Discord.Message) {
@@ -115,14 +118,14 @@ function hotlistpingsignups(message: Discord.Message) {
     const users = Array.from(userIds).map(uid => message.guild.members.get(uid));
     const names = users.map(user => {
         if (user) {
-            return (user as Discord.GuildMember).nickname;
+            return (user as Discord.GuildMember).displayName;
         } else {
             return '<unknown>';
         }
     });
     names.sort();
 
-    return `hotping signups in channel ${channel.name}:
+    return `${names.length} hotping signups in channel <#${channel.id}>:
 \`\`\`
 ${names.join("\n")}
 \`\`\``
@@ -225,6 +228,10 @@ function hotsettings() {
         return channel ? channel.name : '<unknown>';
     });
     settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink).map(cid => {
+        const channel = <Discord.TextChannel>client.channels.find(c => c.id === cid)
+        return channel ? channel.name : '<unknown>';
+    })
+    settingsCopy.hotPingExcludes = Array.from(settingsCopy.hotPingExcludes).map(cid => {
         const channel = <Discord.TextChannel>client.channels.find(c => c.id === cid)
         return channel ? channel.name : '<unknown>';
     })
