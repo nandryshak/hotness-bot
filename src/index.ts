@@ -15,6 +15,8 @@ const MOD_COMMANDS: Record<string, (message: Discord.Message) => string> = {
     hot: maybeUpdateHotter,
     hotpingcooldown: hotpingcooldown,
     hotlistpingsignups: hotlistpingsignups,
+    hotpingexclude: hotpingexclude,
+    hotpinginclude: hotpinginclude,
 };
 
 const USER_COMMANDS: Record<string, (message: Discord.Message) => void> = {
@@ -46,6 +48,7 @@ interface HotnessSettings {
     hotSignupPings: Record<ChannelId, Discord.Message>;
     hotSignupPingCooldownMinutes: number;
     lastPingTimes: Record<ChannelId, Date>;
+    hotPingExcludes: Set<ChannelId>;
 }
 
 const hotnessSettings: HotnessSettings = {
@@ -65,19 +68,47 @@ const hotnessSettings: HotnessSettings = {
     hotSignupPings: {},
     hotSignupPingCooldownMinutes: 15,
     lastPingTimes: {},
+    hotPingExcludes: new Set<ChannelId>(),
 };
 
 const coolingTimeouts: Record<ChannelId, NodeJS.Timeout> = {};
 
-function hotlistpingsignups(message: Discord.Message) {
-    const channelName = parseArgs(message).join(' ').toLowerCase();
-    const channels = message.guild.channels.array();
-    let channel = channels.find(c => c.name.toLowerCase() === channelName);
+function findChannel(maybeChannelName: string) {
+    const channels: Discord.GuildChannel[] = client.guilds.array().map(g => g.channels.array()).reduce((acc, val) => acc.concat(val), []);
+    let channel = channels.find(c => c.name.toLowerCase() === maybeChannelName);
     if (!channel) {
-        channel = channels.find(c => c.name.toLowerCase().indexOf(channelName) !== -1);
+        channel = channels.find(c => c.name.toLowerCase().indexOf(maybeChannelName) !== -1);
     }
+    return channel;
+}
+
+function hotpinginclude(message: Discord.Message) {
+    const maybeChannelName = parseArgs(message).join(' ').toLowerCase();
+    const channel = findChannel(maybeChannelName);
     if (!channel) {
-        return `Error: could not find channel with name containing: '${channelName}'`;
+        return `Error: could not find channel with name containing: '${maybeChannelName}'`;
+    }
+    hotnessSettings.hotPingExcludes.delete(channel.id);
+    saveSettings();
+    return `Channel ${channel.name} is now eligible for hotness pings`;
+}
+
+function hotpingexclude(message: Discord.Message) {
+    const maybeChannelName = parseArgs(message).join(' ').toLowerCase();
+    const channel = findChannel(maybeChannelName);
+    if (!channel) {
+        return `Error: could not find channel with name containing: '${maybeChannelName}'`;
+    }
+    hotnessSettings.hotPingExcludes.add(channel.id);
+    saveSettings();
+    return `Channel ${channel.name} is now excluded from hotness pings`;
+}
+
+function hotlistpingsignups(message: Discord.Message) {
+    const maybeChannelName = parseArgs(message).join(' ').toLowerCase();
+    const channel = findChannel(maybeChannelName);
+    if (!channel) {
+        return `Error: could not find channel with name containing: '${maybeChannelName}'`;
     }
 
     const userIds = hotnessSettings.hotSignups[channel.id] || new Set();
@@ -402,6 +433,7 @@ function saveSettings() {
 
     settingsCopy.whitelist = Array.from(hotnessSettings.whitelist);
     settingsCopy.channelsToLink = Array.from(hotnessSettings.channelsToLink);
+    settingsCopy.hotPingExcludes = Array.from(hotnessSettings.hotPingExcludes);
 
     settingsCopy.hotSignups = {};
     for (let channelId in hotnessSettings.hotSignups) {
@@ -421,6 +453,7 @@ function loadSettings() {
         const settingsJSON = JSON.parse(settingsFileContents.toString());
         settingsJSON.whitelist = new Set(settingsJSON.whitelist);
         settingsJSON.channelsToLink = new Set(settingsJSON.channelsToLink);
+        settingsJSON.hotPingExcludes = new Set(settingsJSON.hotPingExcludes);
         for (let channelId in settingsJSON.hotSignups) {
             settingsJSON.hotSignups[channelId] = new Set(settingsJSON.hotSignups[channelId]);
         }
