@@ -13,6 +13,7 @@ const MOD_COMMANDS: Record<string, (message: Discord.Message) => string> = {
     hotsettings: hotsettings,
     hothelp: help,
     hot: maybeUpdateHotter,
+    hotpingcooldown: hotpingcooldown,
 };
 
 const USER_COMMANDS: Record<string, (message: Discord.Message) => void> = {
@@ -42,6 +43,8 @@ interface HotnessSettings {
     hotSignups: Record<ChannelId, Set<UserId>>;
     hotSignupRoleId: string | undefined;
     hotSignupPings: Record<ChannelId, Discord.Message>;
+    hotSignupPingCooldownMinutes: number;
+    lastPingTimes: Record<ChannelId, Date>;
 }
 
 const hotnessSettings: HotnessSettings = {
@@ -59,14 +62,22 @@ const hotnessSettings: HotnessSettings = {
     hotSignups: {},
     hotSignupRoleId: process.env.HOT_SIGNUP_ROLE_ID,
     hotSignupPings: {},
+    hotSignupPingCooldownMinutes: 15,
+    lastPingTimes: {},
 };
 
 const coolingTimeouts: Record<ChannelId, NodeJS.Timeout> = {};
 
-function selfDestructIn(message: Discord.Message, timeoutms: number) {
-    setTimeout(() => {
-        message.delete().catch(console.error);
-    }, timeoutms);
+function hotpingcooldown(message: Discord.Message) {
+    const args = parseArgs(message).map(parseFloat).filter(arg => !!arg);
+    const minutes = args[0];
+    if (minutes) {
+        hotnessSettings.hotSignupPingCooldownMinutes = minutes;
+        saveSettings();
+        return `hotping cooldown is now ${minutes} minutes.`;
+    } else {
+        return `Error updating hotping cooldown with minutes: ${minutes}`;
+    }
 }
 
 function hotsignup(message: Discord.Message) {
@@ -75,21 +86,13 @@ function hotsignup(message: Discord.Message) {
     }
     hotnessSettings.hotSignups[message.channel.id].add(message.member.id);
     saveSettings();
-    message.reply(`You're now signed up for ${hotnessSettings.icon}HOTNESS${hotnessSettings.icon} in this channel!`)
-        .then(sentMessage => {
-            selfDestructIn(message, 2000);
-            selfDestructIn(<Discord.Message>sentMessage, 2000);
-        });
+    message.reply(`You're now signed up for ${hotnessSettings.icon}HOTNESS${hotnessSettings.icon} in this channel!`).catch(console.error);
 }
 
 function hotsigndown(message: Discord.Message) {
     hotnessSettings.hotSignups[message.channel.id].delete(message.member.id);
     saveSettings();
-    message.reply(`You are no longer signed up for hotness in this channel.`)
-        .then(sentMessage => {
-            selfDestructIn(message, 2000);
-            selfDestructIn(<Discord.Message>sentMessage, 2000);
-        });
+    message.reply(`You are no longer signed up for hotness in this channel.`).catch(console.error);
 }
 
 type Args = string[];
@@ -288,12 +291,25 @@ function pingHotSignups(channel: Discord.TextChannel) {
         return;
     }
 
+    const lastPing = hotnessSettings.lastPingTimes[channel.id] || new Date(1970);
+    const minutesSinceLastPing = (new Date().getTime() - lastPing.getTime()) / 1000 / 60;
+    if (minutesSinceLastPing < hotnessSettings.hotSignupPingCooldownMinutes) {
+        // If the last ping was less than `hotSignupPingCooldownMinutes` minutes ago, return and don't ping again.
+        return;
+    } else {
+        // Else, update the last ping time to now and carry on.
+        hotnessSettings.lastPingTimes[channel.id] = new Date();
+    }
+
     const role = channel.guild.roles.get(hotnessSettings.hotSignupRoleId) as Discord.Role;
     const userIds = (hotnessSettings.hotSignups[channel.id] || new Set());
+    // Just return if there's nobody to ping.
     if (userIds.size === 0) return;
 
+    // Remove all the ping roles from the members of the channel first to make sure nobody gets pinged incorrectly.
     Promise.all(<any>removeRoles(channel.members.array(), role)).then(() => {
         let count = 0;
+        // Add the role to everybody in the signup list and count them.
         Promise.all(<any>Array.from(userIds).map(userId => {
             const user = channel.members.array().find(member => member.id === userId);
             if (user) {
@@ -304,6 +320,7 @@ function pingHotSignups(channel: Discord.TextChannel) {
             }
         })).then(() => {
             console.log(`pinging ${count} out of ${userIds.size} users in ${channel.name}`)
+            // Ping them, then remove the role from them all.
             channel.send(`<@&${role.id}> ${channel.name} is HOT!`)
                 .then(message => {
                     hotnessSettings.hotSignupPings[channel.id] = message as Discord.Message;
@@ -361,6 +378,9 @@ function saveSettings() {
     for (let channelId in hotnessSettings.hotSignups) {
         settingsCopy.hotSignups[channelId] = Array.from(hotnessSettings.hotSignups[channelId] || new Set());
     }
+
+    settingsCopy.hotSignupPingCooldownMinutes = hotnessSettings.hotSignupPingCooldownMinutes;
+
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
     fs.writeFile("settings.json", settingsJSON, err => err && console.error("Error saving settings:", err));
 }
@@ -379,6 +399,7 @@ function loadSettings() {
             (<Discord.TextChannel>client.channels.array().find(c => c.id === hotChannel.id)).setName(hotChannel.oldName);;
         }
         hotnessSettings.hotChannels = [];
+        hotnessSettings.hotSignupPingCooldownMinutes = settingsJSON.hotSignupPingCooldownMinutes || 15;
     } catch (e) {
         console.log("Error loading settings file. Using default settings.", e.message);
     }

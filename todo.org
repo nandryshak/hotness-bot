@@ -13,8 +13,8 @@
    - [X] .hotsigndown: remove from list
    - [X] when channel becomes hot, notify list of users by: assigning role,
      pinging, and removing role
-   - [ ] 15 minute timeout before pinging hotping again
-   - [ ] don't delete messages
+   - [X] 15 minute timeout before pinging hotping again
+   - [X] don't delete messages
    - [ ] exclude certain channels
    - [ ] see who's signed up for certain channel
    - [X] make sure it really removes the roles
