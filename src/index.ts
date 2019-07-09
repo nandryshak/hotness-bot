@@ -409,6 +409,7 @@ function saveSettings() {
     }
 
     settingsCopy.hotSignupPingCooldownMinutes = hotnessSettings.hotSignupPingCooldownMinutes;
+    settingsCopy.lastPingTimes = hotnessSettings.lastPingTimes;
 
     const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
     fs.writeFile("settings.json", settingsJSON, err => err && console.error("Error saving settings:", err));
@@ -429,6 +430,9 @@ function loadSettings() {
         }
         hotnessSettings.hotChannels = [];
         hotnessSettings.hotSignupPingCooldownMinutes = settingsJSON.hotSignupPingCooldownMinutes || 15;
+        for (const channelId in settingsJSON.lastPingTimes) {
+            hotnessSettings.lastPingTimes[channelId] = new Date(settingsJSON.lastPingTimes[channelId]);
+        }
     } catch (e) {
         console.log("Error loading settings file. Using default settings.", e.message);
     }
