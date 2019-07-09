@@ -144,6 +144,9 @@ function hotpingcooldown(message: Discord.Message) {
 }
 
 function hotsignup(message: Discord.Message) {
+    if (hotnessSettings.hotPingExcludes.has(message.channel.id)) {
+        return;
+    }
     if (!hotnessSettings.hotSignups[message.channel.id]) {
         hotnessSettings.hotSignups[message.channel.id] = new Set();
     }
