@@ -278,6 +278,10 @@ function deleteHotSignupPing(channelId: ChannelId) {
     if (message) message.delete().catch();
 }
 
+function removeRoles(users: Discord.GuildMember[], role: Discord.Role) {
+    return users.map(user => user ? user.removeRole(role) : Promise.resolve());
+}
+
 function pingHotSignups(channel: Discord.TextChannel) {
     if (!hotnessSettings.hotSignupRoleId) {
         console.error('No hotSignupRoleId!', hotnessSettings.hotSignupRoleId);
@@ -288,28 +292,27 @@ function pingHotSignups(channel: Discord.TextChannel) {
     const userIds = (hotnessSettings.hotSignups[channel.id] || new Set());
     if (userIds.size === 0) return;
 
-    let count = 0;
-    Promise.all(<any>Array.from(userIds).map(userId => {
-        const user = channel.members.array().find(member => member.id === userId);
-        if (user) {
-            count += 1;
-            return user.addRole(role);
-        } else {
-            return Promise.resolve();
-        }
-    })).then(() => {
-        console.log(`pinging ${count} out of ${userIds.size} users in ${channel.name}`)
-        channel.send(`<@&${role.id}> ${channel.name} is HOT!`)
-            .then(message => {
-                hotnessSettings.hotSignupPings[channel.id] = message as Discord.Message;
-                const TIMEOUT = 5000;
-                setTimeout(() => {
-                    userIds.forEach(userId => {
-                        const user = channel.members.get(userId) as Discord.GuildMember;
-                        user.removeRole(role);
-                    });
-                }, TIMEOUT);
-            });
+    Promise.all(<any>removeRoles(channel.members.array(), role)).then(() => {
+        let count = 0;
+        Promise.all(<any>Array.from(userIds).map(userId => {
+            const user = channel.members.array().find(member => member.id === userId);
+            if (user) {
+                count += 1;
+                return user.addRole(role);
+            } else {
+                return Promise.resolve();
+            }
+        })).then(() => {
+            console.log(`pinging ${count} out of ${userIds.size} users in ${channel.name}`)
+            channel.send(`<@&${role.id}> ${channel.name} is HOT!`)
+                .then(message => {
+                    hotnessSettings.hotSignupPings[channel.id] = message as Discord.Message;
+                    const TIMEOUT = 5000;
+                    setTimeout(() => {
+                        removeRoles(Array.from(userIds).map(uid => channel.members.get(uid) as Discord.GuildMember), role);
+                    }, TIMEOUT);
+                });
+        });
     });
 }
 
