@@ -248,6 +248,13 @@ function hotsettings() {
             settingsCopy.hotSignups[(<Discord.TextChannel>channel).name] = signups;
         }
     }
+    settingsCopy.lastPingTimes = {};
+    for (let channelId in hotnessSettings.lastPingTimes) {
+        const channel = client.channels.find(c => c.id === channelId);
+        if (channel) {
+            settingsCopy.lastPingTimes[(<Discord.TextChannel>channel).name] = hotnessSettings.lastPingTimes[channel.id];
+        }
+    }
 
     settingsCopy.hotSignupPings = undefined;
     try {
