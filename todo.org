@@ -16,7 +16,7 @@
    - [X] 15 minute timeout before pinging hotping again
    - [X] don't delete messages
    - [ ] exclude certain channels
-   - [ ] see who's signed up for certain channel
+   - [X] see who's signed up for certain channel
    - [X] make sure it really removes the roles
 2. Hot0 and hot2 - Hot 0 is 'someone is trying to get started in this channel'
    level - we can have it be a sparks emoji

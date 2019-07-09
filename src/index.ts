@@ -14,6 +14,7 @@ const MOD_COMMANDS: Record<string, (message: Discord.Message) => string> = {
     hothelp: help,
     hot: maybeUpdateHotter,
     hotpingcooldown: hotpingcooldown,
+    hotlistpingsignups: hotlistpingsignups,
 };
 
 const USER_COMMANDS: Record<string, (message: Discord.Message) => void> = {
@@ -67,6 +68,34 @@ const hotnessSettings: HotnessSettings = {
 };
 
 const coolingTimeouts: Record<ChannelId, NodeJS.Timeout> = {};
+
+function hotlistpingsignups(message: Discord.Message) {
+    const channelName = parseArgs(message).join(' ').toLowerCase();
+    const channels = message.guild.channels.array();
+    let channel = channels.find(c => c.name.toLowerCase() === channelName);
+    if (!channel) {
+        channel = channels.find(c => c.name.toLowerCase().indexOf(channelName) !== -1);
+    }
+    if (!channel) {
+        return `Error: could not find channel with name containing: '${channelName}'`;
+    }
+
+    const userIds = hotnessSettings.hotSignups[channel.id] || new Set();
+    const users = Array.from(userIds).map(uid => message.guild.members.get(uid));
+    const names = users.map(user => {
+        if (user) {
+            return (user as Discord.GuildMember).nickname;
+        } else {
+            return '<unknown>';
+        }
+    });
+    names.sort();
+
+    return `hotping signups in channel ${channel.name}:
+\`\`\`
+${names.join("\n")}
+\`\`\``
+}
 
 function hotpingcooldown(message: Discord.Message) {
     const args = parseArgs(message).map(parseFloat).filter(arg => !!arg);
