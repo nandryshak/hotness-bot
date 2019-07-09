@@ -279,6 +279,10 @@ Mod Commands: \`\`\`
 .hotsettings: print settings
 .hot: toggle the hotness-bot
 .hot W X Y Z: change settings to: W words, by X users, in Y minutes, remove icon after Z minutes
+.hotpingcooldown N: set the cooldown of the hot ping to N number of minutes.
+.hotlistpingsignups CHANNEL-NAME: list signups for the channel containing the string CHANNEL-NAME.
+.hotpingexclude CHANNEL-NAME: exclude channel from hot pings by adding it to the blacklist.
+.hotpinginclude CHANNEL-NAME: remove channel from the hot ping blacklist.
 \`\`\``;
 }
 
