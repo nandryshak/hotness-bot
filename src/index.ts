@@ -440,7 +440,7 @@ function saveSettings() {
     settingsCopy.byUsers = hotnessSettings.byUsers;
     settingsCopy.inMinutes = hotnessSettings.inMinutes;
     settingsCopy.coolAfterMinutes = hotnessSettings.coolAfterMinutes;
-
+    settingsCopy.hotChannels = hotnessSettings.hotChannels;
     settingsCopy.whitelist = Array.from(hotnessSettings.whitelist);
     settingsCopy.channelsToLink = Array.from(hotnessSettings.channelsToLink);
     settingsCopy.hotPingExcludes = Array.from(hotnessSettings.hotPingExcludes);
