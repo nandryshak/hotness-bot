@@ -311,7 +311,8 @@ function pingHotSignups(channel: Discord.TextChannel) {
                     setTimeout(() => {
                         removeRoles(Array.from(userIds).map(uid => channel.members.get(uid) as Discord.GuildMember), role);
                     }, TIMEOUT);
-                });
+                })
+                .catch(console.error);
         });
     });
 }
