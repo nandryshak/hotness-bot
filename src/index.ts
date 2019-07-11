@@ -319,7 +319,7 @@ function setChannelHot(message: Discord.Message) {
         channel.setName(hotName);
         // channel.send(hotnessSettings.icon + `This channel is HOT` + hotnessSettings.icon);
         const hotChannel = { id: channel.id, hotName: hotName, oldName: oldName };
-        console.log("hotChannel:", hotChannel);
+        console.log("hotChannel:", hotChannel.hotName, 'oldName:', oldName);
         hotnessSettings.hotChannels.push(hotChannel);
 
         // Maybe put a link in the general channel
@@ -348,7 +348,7 @@ function setChannelHot(message: Discord.Message) {
 function coolChannel(channel: Discord.TextChannel) {
     const hotChannel = hotnessSettings.hotChannels.find(c => c.id === channel.id);
     if (hotChannel && hotChannel.oldName) {
-        console.log("cooling hotChannel:", hotChannel);
+        console.log("cooling hotChannel:", hotChannel.hotName, 'oldName:', hotChannel.oldName);
         const oldName = hotChannel.oldName;
         channel.setName(oldName);
         hotnessSettings.hotChannels = hotnessSettings.hotChannels.filter(c => c.id !== channel.id);
@@ -359,7 +359,12 @@ function coolChannel(channel: Discord.TextChannel) {
 
 function deleteHotSignupPing(channelId: ChannelId) {
     const message = hotnessSettings.hotSignupPings[channelId];
-    if (message) message.delete().catch();
+    if (message) {
+        message.delete().catch(e => {
+            console.error(e);
+            console.error('message:', message.id);
+        });
+    }
 }
 
 function removeRoles(users: Discord.GuildMember[], role: Discord.Role) {
@@ -425,7 +430,7 @@ function dispatchCommand(message: Discord.Message) {
     if (message.member.roles.has(hotnessSettings.enabledRole) || isNanny(message.member.id)) {
         for (const cmd in MOD_COMMANDS) {
             if (message.content.match(`^\\.${cmd}\\b`)) {
-                return message.reply(MOD_COMMANDS[cmd](message));
+                return message.reply(MOD_COMMANDS[cmd](message)).catch(console.error);
             }
         }
     }

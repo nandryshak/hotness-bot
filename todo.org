@@ -1,4 +1,4 @@
-- [ ] Only allow specified roles to adjust bot
+- [X] Only allow specified roles to adjust bot
 - [ ] Real double fire emoji
 - [ ] Convert commands to use commando?
   https://discord.js.org/#/docs/commando/master/general/welcome
@@ -18,6 +18,8 @@
    - [X] exclude certain channels
    - [X] see who's signed up for certain channel
    - [X] make sure it really removes the roles
+   - [ ] fix permissions of commands
+   - [ ] ignore other bot messages
 2. Hot0 and hot2 - Hot 0 is 'someone is trying to get started in this channel'
    level - we can have it be a sparks emoji
 
