@@ -1,8 +1,7 @@
-require('dotenv').config();
-
-// const Discord = require('discord.js');
 import * as Discord from 'discord.js';
+// const Discord = require('discord.js');
 const client = new Discord.Client();
+require('dotenv').config();
 import * as fs from 'fs';
 
 const MOD_COMMANDS: Record<string, (message: Discord.Message) => string> = {
