@@ -224,7 +224,14 @@ function hotdisablehere(message: Discord.Message) {
     return `hotness is now disabled for this channel`;
 }
 
-function hotsettings() {
+function array_chunks<T>(array: Array<T>, chunk_size: number) {
+    return Array(Math.ceil(array.length / chunk_size))
+        .fill(undefined)
+        .map((_: T, index: number) => index * chunk_size)
+        .map((begin: number) => array.slice(begin, begin + chunk_size))
+}
+
+function hotsettings(message: Discord.Message) {
     const settingsCopy = <any>Object.assign({}, hotnessSettings);
     settingsCopy.whitelist = Array.from(settingsCopy.whitelist).map(cid => {
         const channel = <Discord.TextChannel>client.channels.find(c => c.id === cid)
@@ -252,14 +259,21 @@ function hotsettings() {
     for (let channelId in hotnessSettings.lastPingTimes) {
         const channel = client.channels.find(c => c.id === channelId);
         if (channel) {
-            settingsCopy.lastPingTimes[(<Discord.TextChannel>channel).name] = hotnessSettings.lastPingTimes[channel.id];
+            const pingTime = hotnessSettings.lastPingTimes[channel.id];
+            settingsCopy.lastPingTimes[(<Discord.TextChannel>channel).name] = pingTime ? `${pingTime.toLocaleString()} GMT` : '<unknown>';
         }
     }
 
     settingsCopy.hotSignupPings = undefined;
     try {
         const settingsJSON = JSON.stringify(settingsCopy, undefined, 4);
-        return '```' + settingsJSON + '```';
+        if (settingsJSON.length <= 2000 - 6) {
+            return '```' + settingsJSON + '```';
+        } else {
+            const chunks = array_chunks(Array.from(settingsJSON), 2000 - 100);
+            chunks.forEach(chunk => message.reply(`\`\`\`${chunk.join('')}\`\`\``).catch(console.error));
+            return '';
+        }
     } catch (e) {
         console.error('Error in .hotsettings', e.message)
         return 'error building settingsJSON';
@@ -430,7 +444,10 @@ function dispatchCommand(message: Discord.Message) {
     if (message.member.roles.has(hotnessSettings.enabledRole) || isNanny(message.member.id)) {
         for (const cmd in MOD_COMMANDS) {
             if (message.content.match(`^\\.${cmd}\\b`)) {
-                return message.reply(MOD_COMMANDS[cmd](message)).catch(console.error);
+                const response = MOD_COMMANDS[cmd](message);
+                if (response) {
+                    return message.reply(response).catch(console.error);
+                }
             }
         }
     }
