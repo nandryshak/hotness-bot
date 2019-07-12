@@ -308,7 +308,7 @@ function checkHotness(message: Discord.Message) {
     const cutoffTime = new Date(<any>new Date() - hotnessSettings.inMinutes * 60000);
     const latestMessages = message.channel.messages.filter(msg => {
         const date = timestampFromSnowflake(msg.id);
-        return date >= cutoffTime;
+        return date >= cutoffTime && !msg.author.bot;
     });
     const numberOfWords = latestMessages.map(msg => msg.content).join(' ').split(' ').length;
     const numberOfUsers = new Set(latestMessages.map(msg => msg.author.id)).size;
