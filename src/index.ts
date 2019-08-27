@@ -1,3 +1,4 @@
+require('events').EventEmitter.defaultMaxListeners = 25;
 import * as Discord from 'discord.js';
 // const Discord = require('discord.js');
 const client = new Discord.Client();
