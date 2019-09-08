@@ -38,7 +38,7 @@ interface HotnessSettings {
     byUsers: number;
     inMinutes: number;
     coolAfterMinutes: number;
-    whitelist: Set<ChannelId>;
+    blacklist: Set<ChannelId>;
     hotChannels: Array<HotChannel>;
     channelsToLink: Set<ChannelId>;
     enabledRole: string;
@@ -58,7 +58,7 @@ const hotnessSettings: HotnessSettings = {
     byUsers: 2,
     inMinutes: 3,
     coolAfterMinutes: 15,
-    whitelist: new Set<ChannelId>(),
+    blacklist: new Set<ChannelId>(),
     hotChannels: new Array<HotChannel>(),
     channelsToLink: new Set<ChannelId>(),
     enabledRole: process.env.ENABLED_ROLE_ID || '269637424798236673', // 'Moderator' role id
@@ -213,13 +213,13 @@ function updateHotter(args: number[]) {
 }
 
 function hotenablehere(message: Discord.Message) {
-    hotnessSettings.whitelist.add(message.channel.id);
+    hotnessSettings.blacklist.delete(message.channel.id);
     saveSettings();
     return `hotness is now enabled for this channel!`;
 }
 
 function hotdisablehere(message: Discord.Message) {
-    hotnessSettings.whitelist.delete(message.channel.id);
+    hotnessSettings.blacklist.add(message.channel.id);
     saveSettings();
     return `hotness is now disabled for this channel`;
 }
@@ -233,7 +233,7 @@ function array_chunks<T>(array: Array<T>, chunk_size: number) {
 
 function hotsettings(message: Discord.Message) {
     const settingsCopy = <any>Object.assign({}, hotnessSettings);
-    settingsCopy.whitelist = Array.from(settingsCopy.whitelist).map(cid => {
+    settingsCopy.blacklist = Array.from(settingsCopy.blacklist).map(cid => {
         const channel = <Discord.TextChannel>client.channels.find(c => c.id === cid)
         return channel ? channel.name : '<unknown>';
     });
@@ -312,8 +312,8 @@ function checkHotness(message: Discord.Message) {
     });
     const numberOfWords = latestMessages.map(msg => msg.content).join(' ').split(' ').length;
     const numberOfUsers = new Set(latestMessages.map(msg => msg.author.id)).size;
-    const channelInWhitelist = hotnessSettings.whitelist.has(message.channel.id);
-    if (numberOfWords >= hotnessSettings.words && numberOfUsers >= hotnessSettings.byUsers && channelInWhitelist) {
+    const channelInBlacklist = hotnessSettings.blacklist.has(message.channel.id);
+    if (numberOfWords >= hotnessSettings.words && numberOfUsers >= hotnessSettings.byUsers && !channelInBlacklist) {
         setChannelHot(message);
     }
 }
@@ -474,7 +474,7 @@ function saveSettings() {
     settingsCopy.inMinutes = hotnessSettings.inMinutes;
     settingsCopy.coolAfterMinutes = hotnessSettings.coolAfterMinutes;
     settingsCopy.hotChannels = hotnessSettings.hotChannels;
-    settingsCopy.whitelist = Array.from(hotnessSettings.whitelist);
+    settingsCopy.blacklist = Array.from(hotnessSettings.blacklist);
     settingsCopy.channelsToLink = Array.from(hotnessSettings.channelsToLink);
     settingsCopy.hotPingExcludes = Array.from(hotnessSettings.hotPingExcludes);
 
@@ -494,7 +494,7 @@ function loadSettings() {
     try {
         const settingsFileContents = fs.readFileSync('settings.json');
         const settingsJSON = JSON.parse(settingsFileContents.toString());
-        settingsJSON.whitelist = new Set(settingsJSON.whitelist);
+        settingsJSON.blacklist = new Set(settingsJSON.blacklist);
         settingsJSON.channelsToLink = new Set(settingsJSON.channelsToLink);
         settingsJSON.hotPingExcludes = new Set(settingsJSON.hotPingExcludes);
         for (let channelId in settingsJSON.hotSignups) {
