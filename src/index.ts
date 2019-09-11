@@ -425,7 +425,9 @@ function pingHotSignups(channel: Discord.TextChannel) {
             const user = channel.members.array().find(member => member.id === userId);
             if (user) {
                 count += 1;
-                return user.addRole(role);
+                return user.addRole(role).catch(() => {
+                    console.error(`Error adding role for user: ${user.nickname}`);
+                });
             } else {
                 return Promise.resolve();
             }
