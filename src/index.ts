@@ -1,4 +1,4 @@
-require('events').EventEmitter.defaultMaxListeners = 25;
+require('events').EventEmitter.defaultMaxListeners = 100;
 import * as Discord from 'discord.js';
 // const Discord = require('discord.js');
 const client = new Discord.Client();
@@ -374,9 +374,8 @@ function coolChannel(channel: Discord.TextChannel) {
 function deleteHotSignupPing(channelId: ChannelId) {
     const message = hotnessSettings.hotSignupPings[channelId];
     if (message) {
-        message.delete().catch(e => {
-            console.error(e);
-            console.error('message:', message.id);
+        message.delete().catch(() => {
+            console.error('couldn\'t delete message:', message.id);
         });
     }
 }
@@ -386,6 +385,8 @@ function removeRoles(users: Discord.GuildMember[], role: Discord.Role) {
 }
 
 function pingHotSignups(channel: Discord.TextChannel) {
+    if (channel.id === hotnessSettings.generalChannelId) return;
+    
     if (!hotnessSettings.hotSignupRoleId) {
         console.error('No hotSignupRoleId!', hotnessSettings.hotSignupRoleId);
         return;
@@ -430,6 +431,9 @@ function pingHotSignups(channel: Discord.TextChannel) {
                     }, TIMEOUT);
                 })
                 .catch(console.error);
+        }).catch(e => {
+            console.error('Error while adding roles:');
+            console.error(e);
         });
     });
 }
