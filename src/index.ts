@@ -387,7 +387,11 @@ function removeRoles(users: Discord.GuildMember[], role: Discord.Role) {
 }
 
 function pingHotSignups(channel: Discord.TextChannel) {
-    if (channel.id === hotnessSettings.generalChannelId) return;
+    console.info(`pinging hot signups in: ${channel.name}`);
+    if (channel.id === hotnessSettings.generalChannelId) {
+        console.info(`(not pinging general channel)`);
+        return;
+    }
     
     if (!hotnessSettings.hotSignupRoleId) {
         console.error('No hotSignupRoleId!', hotnessSettings.hotSignupRoleId);
@@ -398,6 +402,7 @@ function pingHotSignups(channel: Discord.TextChannel) {
     const minutesSinceLastPing = (new Date().getTime() - lastPing.getTime()) / 1000 / 60;
     if (minutesSinceLastPing < hotnessSettings.hotSignupPingCooldownMinutes) {
         // If the last ping was less than `hotSignupPingCooldownMinutes` minutes ago, return and don't ping again.
+        console.info(`already pinged ${minutesSinceLastPing} ago, not pinging`);
         return;
     } else {
         // Else, update the last ping time to now and carry on.
@@ -407,7 +412,10 @@ function pingHotSignups(channel: Discord.TextChannel) {
     const role = channel.guild.roles.get(hotnessSettings.hotSignupRoleId) as Discord.Role;
     const userIds = (hotnessSettings.hotSignups[channel.id] || new Set());
     // Just return if there's nobody to ping.
-    if (userIds.size === 0) return;
+    if (userIds.size === 0) {
+        console.info(`no users to ping.`)
+        return;
+    }
 
     // Remove all the ping roles from the members of the channel first to make sure nobody gets pinged incorrectly.
     Promise.all(<any>removeRoles(channel.members.array(), role)).then(() => {
