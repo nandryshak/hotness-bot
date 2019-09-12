@@ -313,9 +313,9 @@ function checkHotness(message: Discord.Message) {
     const numberOfWords = latestMessages.map(msg => msg.content).join(' ').split(' ').length;
     const numberOfUsers = new Set(latestMessages.map(msg => msg.author.id)).size;
     const channelInBlacklist = hotnessSettings.blacklist.has(message.channel.id);
-    const channelIsHot = numberOfWords >= hotnessSettings.words && numberOfUsers >= hotnessSettings.byUsers && !channelInBlacklist;
+    const channelCurrentlyHot = numberOfWords >= hotnessSettings.words && numberOfUsers >= hotnessSettings.byUsers && !channelInBlacklist;
     const forceHotness = message.member.roles.has(hotnessSettings.enabledRole) && message.content === '.forcehotness';
-    if (channelIsHot || forceHotness) {
+    if (channelCurrentlyHot || channelIsHot(<Discord.TextChannel>message.channel) || forceHotness) {
         setChannelHot(message);
     }
 }
