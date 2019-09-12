@@ -383,7 +383,7 @@ function deleteHotSignupPing(channelId: ChannelId) {
 }
 
 function removeRoles(users: Discord.GuildMember[], role: Discord.Role) {
-    return users.map(user => user ? user.removeRole(role).catch(console.error) : Promise.resolve());
+    return users.map(user => user ? user.removeRole(role).catch(() => console.error(`Error: removing role timed out for user: ${user.nickname}`)) : Promise.resolve());
 }
 
 function pingHotSignups(channel: Discord.TextChannel) {
