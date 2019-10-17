@@ -53,7 +53,7 @@ interface HotnessSettings {
 
 const hotnessSettings: HotnessSettings = {
     enabled: false,
-    icon: '🔥',
+    icon: '🎃',
     words: 5,
     byUsers: 2,
     inMinutes: 3,
@@ -342,7 +342,7 @@ function setChannelHot(message: Discord.Message) {
         if (hotnessSettings.channelsToLink.has(channel.id)) {
             const generalChannel = <Discord.TextChannel>message.guild.channels.find(c => c.id === hotnessSettings.generalChannelId);
             if (generalChannel) {
-                generalChannel.send(`Checkout the 🔥HOT🔥 discussion in <#${channel.id}>`);
+                generalChannel.send(`Checkout the ${icon}HOT${icon} discussion in <#${channel.id}>`);
             } else {
                 console.error('Could not find general channel');
             }
@@ -434,7 +434,7 @@ function pingHotSignups(channel: Discord.TextChannel) {
         })).then(() => {
             console.log(`pinging ${count} out of ${userIds.size} users in ${channel.name}`)
             // Ping them, then remove the role from them all.
-            channel.send(`<@&${role.id}> ${channel.name} is HOT!`)
+            channel.send(`<@&${role.id}> ${channel.name} is SPOOKY!`)
                 .then(message => {
                     hotnessSettings.hotSignupPings[channel.id] = message as Discord.Message;
                     const TIMEOUT = 5000;
