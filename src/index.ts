@@ -53,7 +53,7 @@ interface HotnessSettings {
 
 const hotnessSettings: HotnessSettings = {
     enabled: false,
-    icon: '🎃',
+    icon: '🔥',
     words: 5,
     byUsers: 2,
     inMinutes: 3,
@@ -392,7 +392,7 @@ function pingHotSignups(channel: Discord.TextChannel) {
         console.info(`(not pinging general channel)`);
         return;
     }
-    
+
     if (!hotnessSettings.hotSignupRoleId) {
         console.error('No hotSignupRoleId!', hotnessSettings.hotSignupRoleId);
         return;
@@ -434,7 +434,7 @@ function pingHotSignups(channel: Discord.TextChannel) {
         })).then(() => {
             console.log(`pinging ${count} out of ${userIds.size} users in ${channel.name}`)
             // Ping them, then remove the role from them all.
-            channel.send(`<@&${role.id}> ${channel.name} is SPOOKY!`)
+            channel.send(`<@&${role.id}> ${channel.name} is HOT!`)
                 .then(message => {
                     hotnessSettings.hotSignupPings[channel.id] = message as Discord.Message;
                     const TIMEOUT = 5000;
