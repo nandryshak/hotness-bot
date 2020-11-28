@@ -77,7 +77,7 @@ function findChannel(maybeChannelName: string) {
     if (!maybeChannelName) {
         return undefined;
     }
-    const channels: Discord.GuildChannel[] = client.guilds.array().map(g => g.channels.array()).reduce((acc, val) => acc.concat(val), []);
+    const channels: Discord.GuildChannel[] = client.guilds.cache.map(g => g.channels.cache.array()).reduce((acc, val) => acc.concat(val), []);
     let channel = channels.find(c => c.name.toLowerCase() === maybeChannelName);
     if (!channel) {
         channel = channels.find(c => c.name.toLowerCase().indexOf(maybeChannelName) !== -1);
@@ -115,7 +115,7 @@ function hotlistpingsignups(message: Discord.Message) {
     }
 
     const userIds = hotnessSettings.hotSignups[channel.id] || new Set();
-    const users = Array.from(userIds).map(uid => message.guild.members.get(uid));
+    const users = Array.from(userIds).map(uid => message.guild.members.cache.get(uid));
     const names = users.map(user => {
         if (user) {
             return (user as Discord.GuildMember).displayName;
@@ -234,22 +234,22 @@ function array_chunks<T>(array: Array<T>, chunk_size: number) {
 function hotsettings(message: Discord.Message) {
     const settingsCopy = <any>Object.assign({}, hotnessSettings);
     settingsCopy.blacklist = Array.from(settingsCopy.blacklist).map(cid => {
-        const channel = <Discord.TextChannel>client.channels.find(c => c.id === cid)
+        const channel = <Discord.TextChannel>client.channels.cache.find(c => c.id === cid)
         return channel ? channel.name : '<unknown>';
     });
     settingsCopy.channelsToLink = Array.from(settingsCopy.channelsToLink).map(cid => {
-        const channel = <Discord.TextChannel>client.channels.find(c => c.id === cid)
+        const channel = <Discord.TextChannel>client.channels.cache.find(c => c.id === cid)
         return channel ? channel.name : '<unknown>';
     })
     settingsCopy.hotPingExcludes = Array.from(settingsCopy.hotPingExcludes).map(cid => {
-        const channel = <Discord.TextChannel>client.channels.find(c => c.id === cid)
+        const channel = <Discord.TextChannel>client.channels.cache.find(c => c.id === cid)
         return channel ? channel.name : '<unknown>';
     })
     settingsCopy.hotChannels = settingsCopy.hotChannels.map((c: HotChannel) => c.hotName);
 
     settingsCopy.hotSignups = {};
     for (let channelId in hotnessSettings.hotSignups) {
-        const channel = client.channels.find(c => c.id === channelId);
+        const channel = client.channels.cache.find(c => c.id === channelId);
         const signups = (hotnessSettings.hotSignups[channelId] || new Set()).size;
         if (channel) {
             settingsCopy.hotSignups[(<Discord.TextChannel>channel).name] = signups;
@@ -257,7 +257,7 @@ function hotsettings(message: Discord.Message) {
     }
     settingsCopy.lastPingTimes = {};
     for (let channelId in hotnessSettings.lastPingTimes) {
-        const channel = client.channels.find(c => c.id === channelId);
+        const channel = client.channels.cache.find(c => c.id === channelId);
         if (channel) {
             const pingTime = hotnessSettings.lastPingTimes[channel.id];
             settingsCopy.lastPingTimes[(<Discord.TextChannel>channel).name] = pingTime ? `${pingTime.toLocaleString()} GMT` : '<unknown>';
@@ -306,7 +306,7 @@ function timestampFromSnowflake(id: Discord.Snowflake) {
 
 function checkHotness(message: Discord.Message) {
     const cutoffTime = new Date(<any>new Date() - hotnessSettings.inMinutes * 60000);
-    const latestMessages = message.channel.messages.filter(msg => {
+    const latestMessages = message.channel.messages.cache.filter(msg => {
         const date = timestampFromSnowflake(msg.id);
         return date >= cutoffTime && !msg.author.bot;
     });
@@ -314,7 +314,7 @@ function checkHotness(message: Discord.Message) {
     const numberOfUsers = new Set(latestMessages.map(msg => msg.author.id)).size;
     const channelInBlacklist = hotnessSettings.blacklist.has(message.channel.id);
     const channelCurrentlyHot = numberOfWords >= hotnessSettings.words && numberOfUsers >= hotnessSettings.byUsers && !channelInBlacklist;
-    const forceHotness = message.member.roles.has(hotnessSettings.enabledRole) && message.content === '.forcehotness';
+    const forceHotness = message.member.roles.cache.has(hotnessSettings.enabledRole) && message.content === '.forcehotness';
     if (channelCurrentlyHot || channelIsHot(<Discord.TextChannel>message.channel) || forceHotness) {
         setChannelHot(message);
     }
@@ -340,7 +340,7 @@ function setChannelHot(message: Discord.Message) {
 
         // Maybe put a link in the general channel
         if (hotnessSettings.channelsToLink.has(channel.id)) {
-            const generalChannel = <Discord.TextChannel>message.guild.channels.find(c => c.id === hotnessSettings.generalChannelId);
+            const generalChannel = <Discord.TextChannel>message.guild.channels.cache.find(c => c.id === hotnessSettings.generalChannelId);
             if (generalChannel) {
                 generalChannel.send(`Checkout the ${icon}HOT${icon} discussion in <#${channel.id}>`);
             } else {
@@ -383,7 +383,7 @@ function deleteHotSignupPing(channelId: ChannelId) {
 }
 
 function removeRoles(users: Discord.GuildMember[], role: Discord.Role) {
-    return users.map(user => user ? user.removeRole(role).catch(() => console.error(`Error: removing role timed out for user: ${user.nickname}`)) : Promise.resolve());
+    return users.map(user => user ? user.roles.remove(role).catch(() => console.error(`Error: removing role timed out for user: ${user.nickname}`)) : Promise.resolve());
 }
 
 function pingHotSignups(channel: Discord.TextChannel) {
@@ -409,7 +409,7 @@ function pingHotSignups(channel: Discord.TextChannel) {
         hotnessSettings.lastPingTimes[channel.id] = new Date();
     }
 
-    const role = channel.guild.roles.get(hotnessSettings.hotSignupRoleId) as Discord.Role;
+    const role = channel.guild.roles.cache.get(hotnessSettings.hotSignupRoleId) as Discord.Role;
     const userIds = (hotnessSettings.hotSignups[channel.id] || new Set());
     // Just return if there's nobody to ping.
     if (userIds.size === 0) {
@@ -425,7 +425,7 @@ function pingHotSignups(channel: Discord.TextChannel) {
             const user = channel.members.array().find(member => member.id === userId);
             if (user) {
                 count += 1;
-                return user.addRole(role).catch(() => {
+                return user.roles.add(role).catch(() => {
                     console.error(`Error adding role for user: ${user.nickname}`);
                 });
             } else {
@@ -455,9 +455,11 @@ function isNanny(id: string) {
 }
 
 function dispatchCommand(message: Discord.Message) {
-    if (!message.member) return;
+    if (!message.member) {
+        console.error(`No member`);
+    }
 
-    if (message.member.roles.has(hotnessSettings.enabledRole) || isNanny(message.member.id)) {
+    if (message.member.roles.cache.has(hotnessSettings.enabledRole) || isNanny(message.member.id)) {
         for (const cmd in MOD_COMMANDS) {
             if (message.content.match(`^\\.${cmd}\\b`)) {
                 const response = MOD_COMMANDS[cmd](message);
@@ -518,7 +520,7 @@ function loadSettings() {
         }
         Object.assign(hotnessSettings, settingsJSON);
         for (const hotChannel of hotnessSettings.hotChannels) {
-            (<Discord.TextChannel>client.channels.array().find(c => c.id === hotChannel.id)).setName(hotChannel.oldName);;
+            (<Discord.TextChannel>client.channels.cache.find(c => c.id === hotChannel.id)).setName(hotChannel.oldName);;
         }
         hotnessSettings.hotChannels = [];
         hotnessSettings.hotSignupPingCooldownMinutes = settingsJSON.hotSignupPingCooldownMinutes || 15;
